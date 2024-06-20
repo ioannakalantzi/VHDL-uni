@@ -1,0 +1,84 @@
+library ieee;
+use ieee.std_logic_1164.all;
+
+Entity control_circuit is 
+	port (opcode: in std_LOGIC_VECTOR(2 DOWNTO 0);
+			operation: out std_LOGIC_VECTOR(1 DOWNTO 0);
+			Ainvert, Binvert, CarryIn: out STD_LOGIC_vector(0 downto 0));
+END control_circuit;	
+ 
+
+Architecture Behavior of control_circuit is
+	Begin
+		operation <= "00" when opcode="000" else
+						  "01" when opcode="001" else
+						  "10" when opcode="010" else
+						  "10" when opcode="011" else
+						  "00" when opcode="100" else
+						  "01" when opcode="101" else
+						  "11" when opcode="110";
+		
+		Ainvert <= "0" when opcode="000" else
+						"0" when opcode="001" else
+						"0" when opcode="010" else
+						"0" when opcode="011" else
+						"1" when opcode="100" else
+						"1" when opcode="101" else
+						"0" when opcode="110";
+		Binvert <= "0" when opcode="000" else
+						"0" when opcode="001" else
+						"0" when opcode="010" else
+						"1" when opcode="011" else
+						"1" when opcode="100" else
+						"1" when opcode="101" else
+						"0" when opcode="110";
+		CarryIn <= "0" when opcode="000" else
+						"0" when opcode="001" else
+						"0" when opcode="010" else
+						"1" when opcode="011" else
+						"0" when opcode="100" else
+						"0" when opcode="101" else
+						"0" when opcode="110";
+End Behavior; 
+
+
+--------Code for ALU using components
+
+library ieee;
+use ieee.std_logic_1164.all;
+
+ENTITY ALU IS
+	port (a , b : in std_logic_vector(15 DOWNTO 0);
+			opcode : IN STD_LOGIC_VECTOR(2 DOWNTO 0);
+			overflow: out std_logic;
+			Result: out std_logic_vector(15 DOWNTO 0));
+End ALU;
+
+Architecture Structure of ALU is
+	Signal c : Std_LOGIC_VECTOR(15 DOWNTO 0);
+	Signal Ainvert,Binvert,CarryIn: Std_LOGIC;
+	Signal operation : std_LOGIC_VECTOR(1 DOWNTO 0);
+
+	
+	Component control_circuit
+			port (opcode: in std_LOGIC_VECTOR(2 DOWNTO 0);
+			operation: out std_LOGIC_VECTOR(1 DOWNTO 0);
+			Ainvert, Binvert, CarryIn: out STD_LOGIC);
+	End Component;	
+	
+	Component ALU1B 
+		port (a , b , Ainvert, Binvert, CarryIn: in std_logic;
+			operation :IN STD_LOGIC_VECTOR(1 DOWNTO 0);
+			CarryOut: out std_LOGIC;
+			f: out std_logic);
+		End Component;
+Begin 
+	Selection: control_circuit port map(opcode, operation, Ainvert, Binvert, CarryIn);
+	Alu0: ALU1B port map(a(0),b(0),Ainvert,Binvert,CarryIn,operation,c(0),Result(0));
+
+	Alus: for i in 1 to 15 generate
+		Alus: ALU1B port map(a(i),b(i),Ainvert,Binvert,c(i-1),operation,c(i),Result(i));
+
+	end generate;
+	FOverflow: overflow<=(c(14) xor c(15));
+End Structure;
